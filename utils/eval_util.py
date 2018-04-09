@@ -1,3 +1,9 @@
+""" Helper function
+
+Author: Charles R. Qi
+Date: September 2017
+"""
+
 import numpy as np
 from scipy.spatial import ConvexHull
 
@@ -172,45 +178,30 @@ if __name__=='__main__':
     points = np.random.rand(30, 2)   # 30 random points in 2-D
     hull = ConvexHull(points)
     # **In 2D "volume" is is area, "area" is perimeter
-    print 'Hull area: ', hull.volume
-    #plt.plot(points[:,0], points[:,1], 'o')
+    print('Hull area: ', hull.volume)
     for simplex in hull.simplices:
-        print simplex
-        #plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
-    #plt.plot(points[hull.vertices,0], points[hull.vertices,1], 'r--', lw=2)
-    #plt.plot(points[hull.vertices[0],0], points[hull.vertices[0],1], 'ro')
-    #plt.show()
-
+        print(simplex)
 
     # Demo on convex hull overlaps
     sub_poly = [(0,0),(300,0),(300,300),(0,300)]
     clip_poly = [(150,150),(300,300),(150,450),(0,300)] 
     inter_poly = polygon_clip(sub_poly, clip_poly)
-    print poly_area(np.array(inter_poly)[:,0], np.array(inter_poly)[:,1])
+    print(poly_area(np.array(inter_poly)[:,0], np.array(inter_poly)[:,1]))
     
     # Test convex hull interaction function
     rect1 = [(50,0),(50,300),(300,300),(300,0)]
     rect2 = [(150,150),(300,300),(150,450),(0,300)] 
     plot_polys([rect1, rect2])
-    #rect2 = [(550,150),(550,300),(500,450),(500,300)] 
     inter, area = convex_hull_intersection(rect1, rect2)
-    print inter, area
+    print(inter, area)
     if inter is not None:
-        print poly_area(np.array(inter)[:,0], np.array(inter)[:,1])
+        print(poly_area(np.array(inter)[:,0], np.array(inter)[:,1]))
     
-    print '------------------'
-    c1 = np.load('roi_seg_box3d/c1.npy')
-    c2 = np.load('roi_seg_box3d/c2.npy')
-    print c1
-    print c2
-    print box3d_vol(c1), box3d_vol(c2)
-    print box3d_iou(c1,c2)
-    
-    print '------------------'
+    print('------------------')
     rect1 = [(0.30026005199835404, 8.9408694211408424), (-1.1571105364358421, 9.4686676477075533), (0.1777082043006144, 13.154404877812102), (1.6350787927348105, 12.626606651245391)]
     rect1 = [rect1[0], rect1[3], rect1[2], rect1[1]]
     rect2 = [(0.23908745901608636, 8.8551095691132886), (-1.2771419487733995, 9.4269062966181956), (0.13138836963152717, 13.161896351296868), (1.647617777421013, 12.590099623791961)]
     rect2 = [rect2[0], rect2[3], rect2[2], rect2[1]]
     plot_polys([rect1, rect2])
     inter, area = convex_hull_intersection(rect1, rect2)
-    print inter, area
+    print(inter, area)

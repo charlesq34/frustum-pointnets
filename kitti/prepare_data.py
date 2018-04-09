@@ -1,4 +1,8 @@
-'''Provides 'object', which loads and parses raw KITTI data.'''
+''' Prepare KITTI data for 3D object detection.
+
+Author: Charles R. Qi
+Date: September 2017
+'''
 
 import os
 import sys
@@ -11,9 +15,9 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import kitti_util as utils
-from viz_util import draw_lidar, draw_gt_boxes3d
 import cPickle as pickle
-from kitti_dataset import *
+from kitti_object import *
+import argparse
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
@@ -37,7 +41,8 @@ def extract_pc_in_box2d(pc, box2d):
     return pc[box2d_roi_inds,:], box2d_roi_inds
      
 def demo():
-    dataset = kitti_object('/home/rqi/Data/KITTI/object')
+    from viz_util import draw_lidar, draw_gt_boxes3d
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
     data_idx = 0
 
     # Load data from dataset
@@ -46,13 +51,13 @@ def demo():
     img = dataset.get_image(data_idx)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
     img_height, img_width, img_channel = img.shape
-    print 'Image shape: ', img.shape
+    print('Image shape: ', img.shape)
     pc_velo = dataset.get_lidar(data_idx)[:,0:3]
     calib = dataset.get_calibration(data_idx)
 
     # Draw lidar in rect camera coord
     pc_rect = calib.project_velo_to_rect(pc_velo)
-    fig = draw_lidar(pc_rect)
+    fig = draw_lidar_simple(pc_rect)
     raw_input()
 
     # Draw 2d and 3d boxes on image
@@ -75,14 +80,16 @@ def demo():
     box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo)
     print 'Number of points in 3d box: ', box3droi_pc_velo.shape[0]
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
     draw_lidar(box3droi_pc_velo, fig=fig)
     draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
     mlab.show(1)
     raw_input()
     
     # UVDepth Image
-    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo, calib, 0, 0, img_width, img_height, True)
+    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
+        calib, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
@@ -96,16 +103,20 @@ def demo():
     print backprojected_pc_velo[0:20]
     raw_input()
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
     draw_lidar(backprojected_pc_velo, fig=fig)
     raw_input()
 
     # Only display those points that fall into 2d box
-    xmin,ymin,xmax,ymax = objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
-    boxfov_pc_velo = get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax)
+    xmin,ymin,xmax,ymax = \
+        objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
+    boxfov_pc_velo = \
+        get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax)
     print '2d box FOV poitn num: ', boxfov_pc_velo.shape[0]
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
     draw_lidar(boxfov_pc_velo, fig=fig)
     mlab.show(1)
     raw_input()
@@ -125,25 +136,26 @@ def random_shift_box2d(box2d, shift_ratio=0.1):
     w2 = w*(1+np.random.random()*2*r-r) # 0.9 to 1.1
     return np.array([cx2-w2/2.0, cy2-h2/2.0, cx2+w2/2.0, cy2+h2/2.0])
  
-def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
-    ''' Extract training data pairs for RoI point set segmentation.
-        Given a frustum of points corresponding to a detected object in 2D with 2D box,
-        Predict points in the frustum that are associated with the detected object.
-        Update: put lidar points and 3d box in *rect camera* coord system (as that in 3d box label files)
+def extract_frustum_data(idx_filename, split, output_filename, viz=False,
+                       perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
+    ''' Extract point clouds and corresponding annotations in frustums
+        defined generated from 2D bounding boxes
+        Lidar points and 3d boxes are in *rect camera* coord system
+        (as that in 3d box label files)
         
-        Input:
-            idx_filename: each line is a number as sample ID
-            split: corresponding to official either trianing or testing
-            output_filename: the name for output .pickle file
-            viz: whether to visualize extracted data
-            perturb_box2d: whether to perturb the box2d (used for data augmentation in train set)
-        Output:
-            None (will write a .pickle file to the disk)
-
-        Usage: extract_roi_seg("val_idx.txt", "training", "roi_seg_dataset_val.pickle")
-
+    Input:
+        idx_filename: string, each line of the file is a sample ID
+        split: string, either trianing or testing
+        output_filename: string, the name for output .pickle file
+        viz: bool, whether to visualize extracted data
+        perturb_box2d: bool, whether to perturb the box2d
+            (used for data augmentation in train set)
+        augmentX: scalar, how many augmentations to have for each 2D box.
+        type_whitelist: a list of strings, object types we are interested in.
+    Output:
+        None (will write a .pickle file to the disk)
     '''
-    dataset = kitti_object('/home/rqi/Data/KITTI/object', split)
+    dataset = kitti_object(os.path.join(ROOT_DIR,'dataset/KITTI/object'), split)
     data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
 
     id_list = [] # int number
@@ -152,7 +164,8 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
     input_list = [] # channel number = 4, xyz,intensity in rect camera coord
     label_list = [] # 1 for roi object, 0 for clutter
     type_list = [] # string e.g. Car
-    heading_list = [] # ry (along y-axis in rect camera coord) radius of clockwise angle from positive x axis in velo coord.
+    heading_list = [] # ry (along y-axis in rect camera coord) radius of
+    # (cont.) clockwise angle from positive x axis in velo coord.
     box3d_size_list = [] # array of l,w,h
     frustum_angle_list = [] # angle of 2d box center from pos x-axis
 
@@ -168,7 +181,8 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
         pc_rect[:,3] = pc_velo[:,3]
         img = dataset.get_image(data_idx)
         img_height, img_width, img_channel = img.shape
-        _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:,0:3], calib, 0, 0, img_width, img_height, True)
+        _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:,0:3],
+            calib, 0, 0, img_width, img_height, True)
 
         for obj_idx in range(len(objects)):
             if objects[obj_idx].type not in type_whitelist :continue
@@ -183,7 +197,10 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
                     print xmin,ymin,xmax,ymax
                 else:
                     xmin,ymin,xmax,ymax = box2d
-                box_fov_inds = (pc_image_coord[:,0]<xmax) & (pc_image_coord[:,0]>=xmin) & (pc_image_coord[:,1]<ymax) & (pc_image_coord[:,1]>=ymin)
+                box_fov_inds = (pc_image_coord[:,0]<xmax) & \
+                    (pc_image_coord[:,0]>=xmin) & \
+                    (pc_image_coord[:,1]<ymax) & \
+                    (pc_image_coord[:,1]>=ymin)
                 box_fov_inds = box_fov_inds & img_fov_inds
                 pc_in_box_fov = pc_rect[box_fov_inds,:]
                 # Get frustum angle (according to center pixel in 2D BOX)
@@ -192,7 +209,8 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
                 uvdepth[0,0:2] = box2d_center
                 uvdepth[0,2] = 20 # some random depth
                 box2d_center_rect = calib.project_image_to_rect(uvdepth)
-                frustum_angle = -1 * np.arctan2(box2d_center_rect[0,2], box2d_center_rect[0,0]) # angle as to positive x-axis as in the Zoox paper
+                frustum_angle = -1 * np.arctan2(box2d_center_rect[0,2],
+                    box2d_center_rect[0,0])
                 # 3D BOX: Get pts velo in 3d box
                 obj = objects[obj_idx]
                 box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P) 
@@ -222,8 +240,8 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
         
-    print 'Average pos ratio: ', pos_cnt/float(all_cnt)
-    print 'Average npoints: ', float(all_cnt)/len(id_list)
+    print('Average pos ratio: %f' % (pos_cnt/float(all_cnt)))
+    print('Average npoints: %f' % (float(all_cnt)/len(id_list)))
     
     with open(output_filename,'wb') as fp:
         pickle.dump(id_list, fp)
@@ -236,23 +254,23 @@ def extract_roi_seg(idx_filename, split, output_filename, viz, perturb_box2d=Fal
         pickle.dump(box3d_size_list, fp)
         pickle.dump(frustum_angle_list, fp)
     
-    import sys
-    sys.path.append('../')
-    from view_pc import draw_lidar, draw_gt_boxes3d
     if viz:
         for i in range(10):
             p1 = input_list[i]
             seg = label_list[i] 
-            #fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
-            #draw_lidar(p1[:,0:3], fig=fig)
-            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(500, 500))
-            mlab.points3d(p1[:,0], p1[:,1], p1[:,2], seg, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
-            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(500, 500))
-            mlab.points3d(p1[:,2], -p1[:,0], -p1[:,1], seg, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
+            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
+                fgcolor=None, engine=None, size=(500, 500))
+            mlab.points3d(p1[:,0], p1[:,1], p1[:,2], seg, mode='point',
+                colormap='gnuplot', scale_factor=1, figure=fig)
+            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
+                fgcolor=None, engine=None, size=(500, 500))
+            mlab.points3d(p1[:,2], -p1[:,0], -p1[:,1], seg, mode='point',
+                colormap='gnuplot', scale_factor=1, figure=fig)
             raw_input()
 
 def get_box3d_dim_statistics(idx_filename):
-    dataset = kitti_object('/home/rqi/Data/KITTI/object')
+    ''' Collect and dump 3D bounding box statistics '''
+    dataset = kitti_object(os.path.join(ROOT_DIR,'dataset/KITTI/object'))
     dimension_list = []
     type_list = []
     ry_list = []
@@ -274,6 +292,7 @@ def get_box3d_dim_statistics(idx_filename):
         pickle.dump(ry_list, fp)
 
 def read_det_file(det_filename):
+    ''' Parse lines in 2D detection output files '''
     det_id2str = {1:'Pedestrian', 2:'Car', 3:'Cyclist'}
     id_list = []
     type_list = []
@@ -287,29 +306,30 @@ def read_det_file(det_filename):
         box2d_list.append(np.array([float(t[i]) for i in range(3,7)]))
     return id_list, type_list, box2d_list, prob_list
 
-def test_read_det_file():
-    ids, types, box2ds, probs = read_det_file('/mnt/nurostorage0/user/w/temp/train_rqi_results.txt')
-    for i in range(100):
-       print ids[i], types[i], box2ds[i], probs[i]
-
  
-def extract_roi_seg_from_rgb_detection(det_filename, split, output_filename, viz, valid_id_list=None, type_whitelist=['Car'], img_height_threshold=25, lidar_point_threshold=5):
-    ''' Extract data pairs for RoI point set segmentation from RGB detector outputed 2D boxes.
-        Update: put lidar points and 3d box in *rect camera* coord system (as that in 3d box label files)
+def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
+                                       viz=False,
+                                       type_whitelist=['Car'],
+                                       img_height_threshold=25,
+                                       lidar_point_threshold=5):
+    ''' Extract point clouds in frustums extruded from 2D detection boxes.
+        Update: Lidar points and 3d boxes are in *rect camera* coord system
+            (as that in 3d box label files)
         
-        Input:
-            det_filename: each line is img_path typeid confidence xmin ymin xmax ymax
-            split: corresponding to official either trianing or testing
-            output_filename: the name for output .pickle file
-            valid_id_list: specify a list of valid image IDs
-        Output:
-            None (will write a .pickle file to the disk)
-
-        Usage: extract_roi_seg_from_rgb_detection("val_rqi_results.txt", "training", "roi_seg_val_rgb_detector_0908.pickle")
-
+    Input:
+        det_filename: string, each line is
+            img_path typeid confidence xmin ymin xmax ymax
+        split: string, either trianing or testing
+        output_filename: string, the name for output .pickle file
+        type_whitelist: a list of strings, object types we are interested in.
+        img_height_threshold: int, neglect image with height lower than that.
+        lidar_point_threshold: int, neglect frustum with too few points.
+    Output:
+        None (will write a .pickle file to the disk)
     '''
     dataset = kitti_object('/home/rqi/Data/KITTI/object', split)
-    det_id_list, det_type_list, det_box2d_list, det_prob_list = read_det_file(det_filename)
+    det_id_list, det_type_list, det_box2d_list, det_prob_list = \
+        read_det_file(det_filename)
     cache_id = -1
     cache = None
     
@@ -322,30 +342,31 @@ def extract_roi_seg_from_rgb_detection(det_filename, split, output_filename, viz
 
     for det_idx in range(len(det_id_list)):
         data_idx = det_id_list[det_idx]
-        if valid_id_list is not None and data_idx not in valid_id_list: continue
-        print 'det idx: %d/%d, data idx: %d' % (det_idx, len(det_id_list), data_idx)
+        print('det idx: %d/%d, data idx: %d' % \
+            (det_idx, len(det_id_list), data_idx))
         if cache_id != data_idx:
             calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
-            #objects = dataset.get_label_objects(data_idx)
             pc_velo = dataset.get_lidar(data_idx)
             pc_rect = np.zeros_like(pc_velo)
             pc_rect[:,0:3] = calib.project_velo_to_rect(pc_velo[:,0:3])
             pc_rect[:,3] = pc_velo[:,3]
             img = dataset.get_image(data_idx)
             img_height, img_width, img_channel = img.shape
-            _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:,0:3], calib, 0, 0, img_width, img_height, True)
+            _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(\
+                pc_velo[:,0:3], calib, 0, 0, img_width, img_height, True)
             cache = [calib,pc_rect,pc_image_coord,img_fov_inds]
             cache_id = data_idx
         else:
             calib,pc_rect,pc_image_coord,img_fov_inds = cache
 
-       
-        #if det_type_list[det_idx]!='Car': continue
         if det_type_list[det_idx] not in type_whitelist: continue
 
         # 2D BOX: Get pts rect backprojected 
         xmin,ymin,xmax,ymax = det_box2d_list[det_idx]
-        box_fov_inds = (pc_image_coord[:,0]<xmax) & (pc_image_coord[:,0]>=xmin) & (pc_image_coord[:,1]<ymax) & (pc_image_coord[:,1]>=ymin)
+        box_fov_inds = (pc_image_coord[:,0]<xmax) & \
+            (pc_image_coord[:,0]>=xmin) & \
+            (pc_image_coord[:,1]<ymax) & \
+            (pc_image_coord[:,1]>=ymin)
         box_fov_inds = box_fov_inds & img_fov_inds
         pc_in_box_fov = pc_rect[box_fov_inds,:]
         # Get frustum angle (according to center pixel in 2D BOX)
@@ -354,10 +375,12 @@ def extract_roi_seg_from_rgb_detection(det_filename, split, output_filename, viz
         uvdepth[0,0:2] = box2d_center
         uvdepth[0,2] = 20 # some random depth
         box2d_center_rect = calib.project_image_to_rect(uvdepth)
-        frustum_angle = -1 * np.arctan2(box2d_center_rect[0,2], box2d_center_rect[0,0]) # angle as to positive x-axis as in the Zoox paper
+        frustum_angle = -1 * np.arctan2(box2d_center_rect[0,2],
+            box2d_center_rect[0,0])
         
         # Pass objects that are too small
-        if ymax-ymin<img_height_threshold or len(pc_in_box_fov)<lidar_point_threshold:
+        if ymax-ymin<img_height_threshold or \
+            len(pc_in_box_fov)<lidar_point_threshold:
             continue
        
         id_list.append(data_idx)
@@ -367,7 +390,6 @@ def extract_roi_seg_from_rgb_detection(det_filename, split, output_filename, viz
         input_list.append(pc_in_box_fov)
         frustum_angle_list.append(frustum_angle)
     
-    print len(id_list)
     with open(output_filename,'wb') as fp:
         pickle.dump(id_list, fp)
         pickle.dump(box2d_list,fp)
@@ -376,35 +398,39 @@ def extract_roi_seg_from_rgb_detection(det_filename, split, output_filename, viz
         pickle.dump(frustum_angle_list, fp)
         pickle.dump(prob_list, fp)
     
-    import sys
-    sys.path.append('../')
-    from view_pc import draw_lidar, draw_gt_boxes3d
     if viz:
         for i in range(10):
             p1 = input_list[i]
-            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(500, 500))
-            mlab.points3d(p1[:,0], p1[:,1], p1[:,2], p1[:,1], mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
-            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(500, 500))
-            mlab.points3d(p1[:,2], -p1[:,0], -p1[:,1], seg, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
+            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
+                fgcolor=None, engine=None, size=(500, 500))
+            mlab.points3d(p1[:,0], p1[:,1], p1[:,2], p1[:,1], mode='point',
+                colormap='gnuplot', scale_factor=1, figure=fig)
+            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
+                fgcolor=None, engine=None, size=(500, 500))
+            mlab.points3d(p1[:,2], -p1[:,0], -p1[:,1], seg, mode='point',
+                colormap='gnuplot', scale_factor=1, figure=fig)
             raw_input()
 
 def write_2d_rgb_detection(det_filename, split, result_dir):
     ''' Write 2D detection results for KITTI evaluation.
         Convert from Wei's format to KITTI format. 
         
-        Input:
-            det_filename: each line is img_path typeid confidence xmin ymin xmax ymax
-            split: corresponding to official either trianing or testing
-            result_dir: folder path for results dumping
-        Output:
-            None (will write <xxx>.txt files to disk)
+    Input:
+        det_filename: string, each line is
+            img_path typeid confidence xmin ymin xmax ymax
+        split: string, either trianing or testing
+        result_dir: string, folder path for results dumping
+    Output:
+        None (will write <xxx>.txt files to disk)
 
-        Usage: write_2d_rgb_detection("val_rqi_results.txt", "training", "results")
-
+    Usage:
+        write_2d_rgb_detection("val_det.txt", "training", "results")
     '''
-    dataset = kitti_object('/home/rqi/Data/KITTI/object', split)
-    det_id_list, det_type_list, det_box2d_list, det_prob_list = read_det_file(det_filename)
-    results = {} # map from idx to list of strings, each string is a line without \n
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'), split)
+    det_id_list, det_type_list, det_box2d_list, det_prob_list = \
+        read_det_file(det_filename)
+    # map from idx to list of strings, each string is a line without \n
+    results = {} 
     for i in range(len(det_id_list)):
         idx = det_id_list[i]
         typename = det_type_list[i]
@@ -426,9 +452,45 @@ def write_2d_rgb_detection(det_filename, split, result_dir):
         fout.close() 
 
 if __name__=='__main__':
-    #demo()
-    #get_box3d_dim_statistics("ImageSets/train.txt")
-    #write_2d_rgb_detection("../results/val_rqi_results3.txt", "training", "rgb_results3_val")
-    #extract_roi_seg('ImageSets/train.txt', 'training', 'kitti3d_carpedcyclist_train.pickle', viz=False, perturb_box2d=True, augmentX=5, type_whitelist=['Car', 'Pedestrian', 'Cyclist'])
-    #extract_roi_seg('ImageSets/val.txt', 'training', 'kitti3d_carpedcyclist_val.pickle', viz=False, perturb_box2d=False, augmentX=1, type_whitelist=['Car', 'Pedestrian', 'Cyclist'])
-    #extract_roi_seg('ImageSets/trainval.txt', 'training', 'kitti3d_carpedcyclist_trainval.pickle', viz=False, perturb_box2d=True, augmentX=5, type_whitelist=['Car', 'Pedestrian', 'Cyclist'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--demo', action='store_true', help='Run demo.')
+    parser.add_argument('--gen_train', action='store_true', help='Generate train split frustum data with perturbed GT 2D boxes')
+    parser.add_argument('--gen_val', action='store_true', help='Generate val split frustum data with GT 2D boxes')
+    parser.add_argument('--gen_val_rgb_detection', action='store_true', help='Generate val split frustum data with RGB detection 2D boxes')
+    parser.add_argument('--car_only', action='store_true', help='Only generate cars; otherwise cars, peds and cycs')
+    args = parser.parse_args()
+
+    if args.demo:
+        demo()
+        exit()
+
+    if args.car_only:
+        type_whitelist = ['Car']
+        output_prefix = 'frustum_caronly_'
+    else:
+        type_whitelist = ['Car', 'Pedestrian', 'Cyclist']
+        output_prefix = 'frustum_carpedcyclist_'
+
+    if args.gen_train:
+        extract_frustum_data(\
+            os.path.join(BASE_DIR, 'image_sets/train.txt'),
+            'training',
+            output_prefix+'train.pickle', 
+            viz=False, perturb_box2d=True, augmentX=5,
+            type_whitelist=type_whitelist)
+
+    if args.gen_val:
+        extract_frustum_data(\
+            os.path.join(BASE_DIR, 'image_sets/val.txt'),
+            'training',
+            output_prefix+'val.pickle',
+            viz=False, perturb_box2d=False, augmentX=1,
+            type_whitelist=type_whitelist)
+
+    if args.gen_val_rgb_detection:
+        extract_frustum_data_rgb_detection(\
+            os.path.join(BASE_DIR, 'rgb_detections/rgb_detection_val.txt'),
+            'training',
+            output_prefix+'val_rgb_detection.pickle',
+            viz=False,
+            type_whitelist=type_whitelist) 

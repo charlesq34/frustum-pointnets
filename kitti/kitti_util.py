@@ -1,12 +1,17 @@
-""" Provides helper methods for loading and parsing KITTI data.
+""" Helper methods for loading and parsing KITTI data.
+
+Author: Charles R. Qi
+Date: September 2017
+
 Ref: https://github.com/utiasSTARS/pykitti/blob/master/pykitti/utils.py
 """
+
 import numpy as np
 import cv2
 import os
 
 class Object3d(object):
-    ''' A 3d object label '''
+    ''' 3d object label '''
     def __init__(self, label_file_line):
         data = label_file_line.split(' ')
         data[1:] = [float(x) for x in data[1:]]
@@ -365,9 +370,10 @@ def draw_projected_box3d(image, qs, color=(255,255,255), thickness=2):
     '''
     qs = qs.astype(np.int32)
     for k in range(0,4):
-       #http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html
+       # Ref: http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html
        i,j=k,(k+1)%4
-       cv2.line(image, (qs[i,0],qs[i,1]), (qs[j,0],qs[j,1]), color, thickness, cv2.CV_AA) # use LINE_AA for opencv3
+       # use LINE_AA for opencv3
+       cv2.line(image, (qs[i,0],qs[i,1]), (qs[j,0],qs[j,1]), color, thickness, cv2.CV_AA)
 
        i,j=k+4,(k+1)%4 + 4
        cv2.line(image, (qs[i,0],qs[i,1]), (qs[j,0],qs[j,1]), color, thickness, cv2.CV_AA)

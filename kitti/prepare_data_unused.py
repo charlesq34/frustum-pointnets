@@ -1,3 +1,8 @@
+''' More functions for data preparation.
+For example: for top-down region extraction, 
+lidar image extraction, image extraction etc.
+'''
+
 def save_zipped_pickle(obj, filename, protocol=-1):
     with gzip.open(filename, 'wb') as f:
         cPickle.dump(obj, f, protocol)
