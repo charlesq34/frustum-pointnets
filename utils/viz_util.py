@@ -2,6 +2,7 @@ import numpy as np
 import mayavi.mlab as mlab
 
 def draw_lidar(pc, color=None, fig=None, bgcolor=(0,0,0), pts_scale=1, pts_mode='point', pts_color=None):
+    # TODO: add reference
     ''' Draw lidar points
         Args:
             pc: numpy array (n,3) of XYZ
@@ -17,17 +18,7 @@ def draw_lidar(pc, color=None, fig=None, bgcolor=(0,0,0), pts_scale=1, pts_mode=
     #draw grid
     mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2)
     
-    #for y in np.arange(-50,50,1):
-    #    x1,y1,z1 = -50, y, 0
-    #    x2,y2,z2 =  50, y, 0
-    #    mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5), tube_radius=None, line_width=1, figure=fig)
-    #
-    #for x in np.arange(-50,50,1):
-    #    x1,y1,z1 = x,-50, 0
-    #    x2,y2,z2 = x, 50, 0
-    #    mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5), tube_radius=None, line_width=1, figure=fig)
-    
-    ##draw axis
+    #draw axis
     mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2)
     
     axes=np.array([
@@ -39,7 +30,6 @@ def draw_lidar(pc, color=None, fig=None, bgcolor=(0,0,0), pts_scale=1, pts_mode=
         [20., 20., 0.,0.],
         [20.,-20., 0.,0.],
     ],dtype=np.float64)
-    
     
     mlab.plot3d([0, axes[0,0]], [0, axes[0,1]], [0, axes[0,2]], color=(1,0,0), tube_radius=None, figure=fig)
     mlab.plot3d([0, axes[1,0]], [0, axes[1,1]], [0, axes[1,2]], color=(0,1,0), tube_radius=None, figure=fig)

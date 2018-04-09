@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.spatial import ConvexHull
-#import matplotlib.pyplot as plt
 
 def polygon_clip(subjectPolygon, clipPolygon):
    """ Clip a polygon with another polygon.
@@ -61,16 +60,15 @@ def convex_hull_intersection(p1, p2):
     """
     inter_p = polygon_clip(p1,p2)
     if inter_p is not None:
-        #plot_polys([p1,p2,inter_p],3.0)
         hull_inter = ConvexHull(inter_p)
         return inter_p, hull_inter.volume
     else:
-        #plot_polys([p1,p2],3.0)
         return None, 0.0
 
 import matplotlib
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
+import matplotlib.pyplot as plt
 def plot_polys(plist,scale=500.0):
     fig, ax = plt.subplots()
     patches = []
