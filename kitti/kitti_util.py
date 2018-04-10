@@ -2,8 +2,6 @@
 
 Author: Charles R. Qi
 Date: September 2017
-
-Ref: https://github.com/utiasSTARS/pykitti/blob/master/pykitti/utils.py
 """
 
 import numpy as np
@@ -37,10 +35,14 @@ class Object3d(object):
         self.ry = data[14] # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
 
     def print_object(self):
-        print 'Type, truncation, occlusion, alpha: ', self.type, self.truncation, self.occlusion, self.alpha
-        print '2d bbox (x0,y0,x1,y1): ', self.xmin, self.ymin, self.xmax, self.ymax
-        print '3d bbox h,w,l: ', self.h, self.w, self.l
-        print '3d bbox location, ry: ', self.t, self.ry
+        print('Type, truncation, occlusion, alpha: %s, %d, %d, %f' % \
+            (self.type, self.truncation, self.occlusion, self.alpha))
+        print('2d bbox (x0,y0,x1,y1): %f, %f, %f, %f' % \
+            (self.xmin, self.ymin, self.xmax, self.ymax))
+        print('3d bbox h,w,l: %f, %f, %f' % \
+            (self.h, self.w, self.l))
+        print('3d bbox location, ry: (%f, %f, %f), %f' % \
+            (self.t[0],self.t[1],self.t[2],self.ry))
 
 
 class Calibration(object):
@@ -100,7 +102,9 @@ class Calibration(object):
         self.b_y = self.P[1,3]/(-self.f_v)
 
     def read_calib_file(self, filepath):
-        """Read in a calibration file and parse into a dictionary."""
+        ''' Read in a calibration file and parse into a dictionary.
+        Ref: https://github.com/utiasSTARS/pykitti/blob/master/pykitti/utils.py
+        '''
         data = {}
         with open(filepath, 'r') as f:
             for line in f.readlines():
@@ -212,7 +216,7 @@ class Calibration(object):
 
  
 def rotx(t):
-    """Rotation about the x-axis."""
+    ''' 3D Rotation about the x-axis. '''
     c = np.cos(t)
     s = np.sin(t)
     return np.array([[1,  0,  0],
@@ -221,7 +225,7 @@ def rotx(t):
 
 
 def roty(t):
-    """Rotation about the y-axis."""
+    ''' Rotation about the y-axis. '''
     c = np.cos(t)
     s = np.sin(t)
     return np.array([[c,  0,  s],
@@ -230,7 +234,7 @@ def roty(t):
 
 
 def rotz(t):
-    """Rotation about the z-axis."""
+    ''' Rotation about the z-axis. '''
     c = np.cos(t)
     s = np.sin(t)
     return np.array([[c, -s,  0],
@@ -239,16 +243,16 @@ def rotz(t):
 
 
 def transform_from_rot_trans(R, t):
-    """Transforation matrix from rotation matrix and translation vector."""
+    ''' Transforation matrix from rotation matrix and translation vector. '''
     R = R.reshape(3, 3)
     t = t.reshape(3, 1)
     return np.vstack((np.hstack([R, t]), [0, 0, 0, 1]))
 
 
 def inverse_rigid_trans(Tr):
-    """Inverse a rigid body transform matrix (3x4 as [R|t])
+    ''' Inverse a rigid body transform matrix (3x4 as [R|t])
         [R'|-R't; 0|1]
-    """ 
+    '''
     inv_Tr = np.zeros_like(Tr) # 3x4
     inv_Tr[0:3,0:3] = np.transpose(Tr[0:3,0:3])
     inv_Tr[0:3,3] = np.dot(-np.transpose(Tr[0:3,0:3]), Tr[0:3,3])
@@ -283,7 +287,7 @@ def project_to_image(pts_3d, P):
     '''
     n = pts_3d.shape[0]
     pts_3d_extend = np.hstack((pts_3d, np.ones((n,1))))
-    print 'pts_3d_extend shape: ', pts_3d_extend.shape
+    print('pts_3d_extend shape: ', pts_3d_extend.shape)
     pts_2d = np.dot(pts_3d_extend, np.transpose(P)) # nx3
     pts_2d[:,0] /= pts_2d[:,2]
     pts_2d[:,1] /= pts_2d[:,2]

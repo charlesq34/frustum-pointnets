@@ -469,7 +469,7 @@ if __name__=='__main__':
         output_prefix = 'frustum_caronly_'
     else:
         type_whitelist = ['Car', 'Pedestrian', 'Cyclist']
-        output_prefix = 'frustum_carpedcyclist_'
+        output_prefix = 'frustum_carpedcyc_'
 
     if args.gen_train:
         extract_frustum_data(\

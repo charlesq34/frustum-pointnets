@@ -176,6 +176,7 @@ def placeholder_inputs(batch_size, num_point):
         shape=(batch_size, num_point, 4))
     one_hot_vec_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
 
+    # labels_pl is for segmentation label
     labels_pl = tf.placeholder(tf.int32, shape=(batch_size, num_point))
     centers_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
     heading_class_label_pl = tf.placeholder(tf.int32, shape=(batch_size,))
@@ -349,14 +350,6 @@ def get_loss(mask_label, center_label, \
     size_residual_normalized_loss = huber_loss(size_normalized_dist, delta=1.0)
     tf.summary.scalar('size residual normalized loss',
         size_residual_normalized_loss)
-
-    # TODO: move to train_onehot.py
-    # Compute IOU 3D
-    #iou2ds, iou3ds = tf.py_func(compute_box3d_iou, [end_points['center'], end_points['heading_scores'], end_points['heading_residuals'], end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label, heading_residual_label, size_class_label, size_residual_label], [tf.float32, tf.float32])
-    #tf.summary.scalar('iou_2d', tf.reduce_mean(iou2ds))
-    #tf.summary.scalar('iou_3d', tf.reduce_mean(iou3ds))
-    #end_points['iou2ds'] = iou2ds 
-    #end_points['iou3ds'] = iou3ds 
 
     # Corner loss
     # We select the predicted corners corresponding to the 
