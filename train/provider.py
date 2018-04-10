@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR,'models'))
-from box_utils import box3d_iou
+from box_util import box3d_iou
 from model_util import g_type2class, g_class2type, g_type2onehotclass
 from model_util import g_type_mean_size
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
@@ -263,6 +263,13 @@ def get_3d_box(box_size, heading_angle, center):
     Output:
         corners_3d: numpy array of shape (8,3) for 3D box cornders
     '''
+    def roty(t):
+        c = np.cos(t)
+        s = np.sin(t)
+        return np.array([[c,  0,  s],
+                         [0,  1,  0],
+                         [-s, 0,  c]])
+
     R = roty(heading_angle)
     l,w,h = box_size
     x_corners = [l/2,l/2,-l/2,-l/2,l/2,l/2,-l/2,-l/2];

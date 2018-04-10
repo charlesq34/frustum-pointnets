@@ -14,7 +14,7 @@ from datetime import datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
-sys.path.append(ROOT_DIR, 'models')
+sys.path.append(os.path.join(ROOT_DIR, 'models'))
 import provider
 from train_util import get_batch
 
@@ -49,11 +49,11 @@ NUM_CHANNEL = 3 if FLAGS.no_intensity else 4 # point feature channel
 NUM_CLASSES = 2 # segmentation has two classes
 
 MODEL = importlib.import_module(FLAGS.model) # import network module
-MODEL_FILE = os.path.join(BASE_DIR, FLAGS.model+'.py')
+MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
 LOG_DIR = FLAGS.log_dir
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
-os.system('cp train_one_hot.py %s' % (LOG_DIR)) # bkp of train procedure
+os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train.py'), LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
 
@@ -125,13 +125,13 @@ def train():
             tf.summary.scalar('total_loss', total_loss)
 
             # Write summaries of bounding box IoU and segmentation accuracies
-            iou2ds, iou3ds = tf.py_func(compute_box3d_iou, [\
+            iou2ds, iou3ds = tf.py_func(provider.compute_box3d_iou, [\
                 end_points['center'], \
                 end_points['heading_scores'], end_points['heading_residuals'], \
                 end_points['size_scores'], end_points['size_residuals'], \
-                center_label, \
-                heading_class_label, heading_residual_label, \
-                size_class_label, size_residual_label], \
+                centers_pl, \
+                heading_class_label_pl, heading_residual_label_pl, \
+                size_class_label_pl, size_residual_label_pl], \
                 [tf.float32, tf.float32])
             end_points['iou2ds'] = iou2ds 
             end_points['iou3ds'] = iou3ds 

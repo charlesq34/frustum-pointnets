@@ -33,12 +33,12 @@ for i in range(NUM_SIZE_CLUSTER):
 # TF Functions Helpers
 # -----------------
 
-def tf_gather_object_pc(point_cloud, mask, npoint=512):
+def tf_gather_object_pc(point_cloud, mask, npoints=512):
     ''' Gather object point clouds according to predicted masks.
     Input:
         point_cloud: TF tensor in shape (B,N,C)
         mask: TF tensor in shape (B,N) of 0 (not pick) or 1 (pick)
-        npoint: int scalar, maximum number of points to keep (default: 512)
+        npoints: int scalar, maximum number of points to keep (default: 512)
     Output:
         object_pc: TF tensor in shape (B,npoint,C)
         indices: TF int tensor in shape (B,npoint,2)
