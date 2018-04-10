@@ -15,7 +15,7 @@ from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
 from model_util import placeholder_inputs, parse_output_to_tensors, get_loss
 
 def get_instance_seg_v1_net(point_cloud, one_hot_vec,
-                         is_training, bn_decay, end_points):
+                            is_training, bn_decay, end_points):
     ''' 3D instance segmentation PointNet v1 network.
     Input:
         point_cloud: TF tensor in shape (B,N,4)
@@ -32,7 +32,6 @@ def get_instance_seg_v1_net(point_cloud, one_hot_vec,
     '''
     batch_size = point_cloud.get_shape()[0].value
     num_point = point_cloud.get_shape()[1].value
-    end_points = {}
 
     net = tf.expand_dims(point_cloud, 2)
 
@@ -87,17 +86,21 @@ def get_instance_seg_v1_net(point_cloud, one_hot_vec,
     logits = tf.squeeze(logits, [2]) # BxNxC
     return logits, end_points
  
-def get_center_regression_net(point_cloud, mask):
+def get_center_regression_net(point_cloud, one_hot_vec, mask,
+                              is_training, bn_decay, end_points):
     ''' Regress to object center
     Input:
         point_cloud: TF tensor in shape (B,N,C)
             point clouds in 3D mask coordinate
+        one_hot_vec: TF tensor in shape (B,3)
+            length-3 vectors indicating predicted object type
         mask: TF tensor in shape (B,N)
             predicted 3D masks for points
             value is either 0 (clutter) or 1 (object)
     Output:
         predicted_center: TF tensor in shape (B,3)
     ''' 
+    num_point = point_cloud.get_shape()[1].value
     net = tf.expand_dims(point_cloud, 2)
     net = tf_util.conv2d(net, 128, [1,1],
                          padding='VALID', stride=[1,1],
@@ -111,7 +114,8 @@ def get_center_regression_net(point_cloud, mask):
                          padding='VALID', stride=[1,1],
                          bn=True, is_training=is_training,
                          scope='conv-reg3-stage1', bn_decay=bn_decay)
-    mask_expand = tf.tile(tf.expand_dims(mask,-1), [1,1,1,256])
+    mask_expand = tf.tile(\
+        tf.expand_dims(tf.expand_dims(mask,-1),-1), [1,1,1,256])
     masked_net = net*mask_expand
     net = tf_util.max_pool2d(masked_net, [num_point,1],
         padding='VALID', scope='maxpool-stage1')
@@ -125,11 +129,14 @@ def get_center_regression_net(point_cloud, mask):
         scope='fc3-stage1')
     return predicted_center
 
-def get_3d_box_estimation_v1_net(point_cloud_xyz_submean, mask):
+def get_3d_box_estimation_v1_net(point_cloud, one_hot_vec, mask,
+                                 is_training, bn_decay, end_points):
     ''' 3D Box Estimation PointNet v1 network.
     Input:
         point_cloud: TF tensor in shape (B,N,C)
             point clouds in object coordinate
+        one_hot_vec: TF tensor in shape (B,3)
+            length-3 vectors indicating predicted object type
         mask: TF tensor in shape (B,N)
             predicted 3D masks for points
             value is either 0 (clutter) or 1 (object)
@@ -138,7 +145,8 @@ def get_3d_box_estimation_v1_net(point_cloud_xyz_submean, mask):
             including box centers, heading bin class scores and residuals,
             and size cluster scores and residuals
     ''' 
-    net = tf.expand_dims(point_cloud_xyz_submean, 2)
+    num_point = point_cloud.get_shape()[1].value
+    net = tf.expand_dims(point_cloud, 2)
     net = tf_util.conv2d(net, 128, [1,1],
                          padding='VALID', stride=[1,1],
                          bn=True, is_training=is_training,
@@ -155,7 +163,8 @@ def get_3d_box_estimation_v1_net(point_cloud_xyz_submean, mask):
                          padding='VALID', stride=[1,1],
                          bn=True, is_training=is_training,
                          scope='conv-reg4', bn_decay=bn_decay)
-    mask_expand = tf.tile(tf.expand_dims(mask,-1), [1,1,1,512])
+    mask_expand = tf.tile(\
+        tf.expand_dims(tf.expand_dims(mask,-1),-1), [1,1,1,512])
     masked_net = net*mask_expand
     net = tf_util.max_pool2d(masked_net, [num_point,1],
         padding='VALID', scope='maxpool2')
@@ -200,7 +209,6 @@ def get_model(point_cloud, one_hot_vec, is_training, bn_decay=None):
     mask = tf.slice(logits,[0,0,0],[-1,-1,1]) < \
         tf.slice(logits,[0,0,1],[-1,-1,1])
     mask = tf.to_float(mask) # BxNx1
-    end_points['mask'] = tf.squeeze(mask, axis=[2])
 
     # subtract masked points centroid
     mask_count = tf.tile(tf.reduce_sum(mask,axis=1,keep_dims=True),
@@ -208,18 +216,24 @@ def get_model(point_cloud, one_hot_vec, is_training, bn_decay=None):
     point_cloud_xyz = tf.slice(point_cloud, [0,0,0], [-1,-1,3]) # BxNx3
     mask_xyz_mean = tf.reduce_sum(tf.tile(mask, [1,1,3])*point_cloud_xyz,
         axis=1, keep_dims=True) # Bx1x3
+    mask = tf.squeeze(mask, axis=[2]) # BxN 
+    end_points['mask'] = mask
     mask_xyz_mean = mask_xyz_mean/tf.maximum(mask_count,1) # Bx1x3
     point_cloud_xyz_stage1 = point_cloud_xyz - \
         tf.tile(mask_xyz_mean, [1,num_point,1])
 
     # 3D Box Estimation PointNet
-    stage1_center_delta = get_center_regression_net(point_cloud_xyz_stage1, mask)
+    stage1_center_delta = get_center_regression_net(\
+        point_cloud_xyz_stage1, one_hot_vec, mask,
+        is_training, bn_decay, end_points)
     stage1_center = stage1_center_delta + tf.squeeze(mask_xyz_mean, axis=1) # Bx3
     end_points['stage1_center'] = stage1_center
 
     # subtract stage1 center
     point_cloud_xyz_submean = point_cloud_xyz - tf.expand_dims(stage1_center, 1)
-    output = get_3d_box_estimation_v1_net(point_cloud_xyz_submean, mask)
+    output = get_3d_box_estimation_v1_net(\
+        point_cloud_xyz_submean, one_hot_vec, mask,
+        is_training, bn_decay, end_points)
 
     # parse output to 3D box parameters
     end_points = parse_output_to_tensors(output, end_points)
@@ -231,9 +245,10 @@ if __name__=='__main__':
     with tf.Graph().as_default():
         inputs = tf.zeros((32,1024,4))
         outputs = get_model(inputs, tf.ones((32,3)), tf.constant(True))
-        print(outputs)
-        loss = get_loss(outputs[0], tf.zeros((32,1024),dtype=tf.int32),
+        for key in outputs:
+            print(key, outputs[key])
+        loss = get_loss(tf.zeros((32,1024),dtype=tf.int32),
             tf.zeros((32,3)), tf.zeros((32,),dtype=tf.int32),
             tf.zeros((32,)), tf.zeros((32,),dtype=tf.int32),
-            tf.zeros((32,3)), outputs[0])
+            tf.zeros((32,3)), outputs)
         print(loss)

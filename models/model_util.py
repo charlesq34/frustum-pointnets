@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 
@@ -62,17 +63,17 @@ def tf_gather_object_pc(point_cloud, mask, npoint=512):
 
 def get_box3d_corners_helper(centers, headings, sizes):
     """ TF layer. Input: (N,3), (N,), (N,3), Output: (N,8,3) """
-    print '-----', centers
+    #print '-----', centers
     N = centers.get_shape()[0].value
     l = tf.slice(sizes, [0,0], [-1,1]) # (N,1)
     w = tf.slice(sizes, [0,1], [-1,1]) # (N,1)
     h = tf.slice(sizes, [0,2], [-1,1]) # (N,1)
-    print l,w,h
+    #print l,w,h
     x_corners = tf.concat([l/2,l/2,-l/2,-l/2,l/2,l/2,-l/2,-l/2], axis=1) # (N,8)
     y_corners = tf.concat([h/2,h/2,h/2,h/2,-h/2,-h/2,-h/2,-h/2], axis=1) # (N,8)
     z_corners = tf.concat([w/2,-w/2,-w/2,w/2,w/2,-w/2,-w/2,w/2], axis=1) # (N,8)
     corners = tf.concat([tf.expand_dims(x_corners,1), tf.expand_dims(y_corners,1), tf.expand_dims(z_corners,1)], axis=1) # (N,3,8)
-    print x_corners, y_corners, z_corners
+    #print x_corners, y_corners, z_corners
     c = tf.cos(headings)
     s = tf.sin(headings)
     ones = tf.ones([N], dtype=tf.float32)
@@ -81,7 +82,7 @@ def get_box3d_corners_helper(centers, headings, sizes):
     row2 = tf.stack([zeros,ones,zeros], axis=1)
     row3 = tf.stack([-s,zeros,c], axis=1)
     R = tf.concat([tf.expand_dims(row1,1), tf.expand_dims(row2,1), tf.expand_dims(row3,1)], axis=1) # (N,3,3)
-    print row1, row2, row3, R, N
+    #print row1, row2, row3, R, N
     corners_3d = tf.matmul(R, corners) # (N,3,8)
     corners_3d += tf.tile(tf.expand_dims(centers,2), [1,1,8]) # (N,3,8)
     corners_3d = tf.transpose(corners_3d, perm=[0,2,1]) # (N,8,3)
@@ -154,6 +155,7 @@ def parse_output_to_tensors(output, end_points):
     Output:
         end_points: dict (updated)
     '''
+    batch_size = output.get_shape()[0].value
     center = tf.slice(output, [0,0], [-1,3])
     end_points['center_boxnet'] = center
 
