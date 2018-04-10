@@ -1,6 +1,10 @@
 import numpy as np
 import tensorflow as tf
-
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR)
+import tf_util
 
 # -----------------
 # Global Constants
@@ -8,6 +12,7 @@ import tensorflow as tf
 
 NUM_HEADING_BIN = 12
 NUM_SIZE_CLUSTER = 8
+NUM_OBJECT_POINT = 512
 g_type2class={'Car':0, 'Van':1, 'Truck':2, 'Pedestrian':3,
               'Person_sitting':4, 'Cyclist':5, 'Tram':6, 'Misc':7}
 g_class2type = {g_type2class[t]:t for t in g_type2class}
@@ -25,7 +30,7 @@ for i in range(NUM_SIZE_CLUSTER):
     g_mean_size_arr[i,:] = g_type_mean_size[g_class2type[i]]
 
 # -----------------
-# TF Functions
+# TF Functions Helpers
 # -----------------
 
 def tf_gather_object_pc(point_cloud, mask, npoint=512):
@@ -120,32 +125,6 @@ def huber_loss(error, delta):
     losses = 0.5 * quadratic**2 + delta * linear
     return tf.reduce_mean(losses)
 
-# --------------------------------------
-# Shared functions for v1 and v2 models
-# --------------------------------------
-
-def placeholder_inputs(batch_size, num_point):
-    ''' Get useful placeholder tensors.
-    Input:
-        batch_size: scalar int
-        num_point: scalar int
-    Output:
-        TF placeholders for inputs and ground truths
-    '''
-    pointclouds_pl = tf.placeholder(tf.float32,
-        shape=(batch_size, num_point, 4))
-    one_hot_vec_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
-
-    labels_pl = tf.placeholder(tf.int32, shape=(batch_size, num_point))
-    centers_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
-    heading_class_label_pl = tf.placeholder(tf.int32, shape=(batch_size,))
-    heading_residual_label_pl = tf.placeholder(tf.float32, shape=(batch_size,))
-    size_class_label_pl = tf.placeholder(tf.int32, shape=(batch_size,))
-    size_residual_label_pl = tf.placeholder(tf.float32, shape=(batch_size,3))
-
-    return pointclouds_pl, one_hot_vec_pl, labels_pl, centers_pl, \
-        heading_class_label_pl, heading_residual_label_pl, \
-        size_class_label_pl, size_residual_label_pl
 
 def parse_output_to_tensors(output, end_points):
     ''' Parse batch output to separate tensors (added to end_points)
@@ -180,6 +159,117 @@ def parse_output_to_tensors(output, end_points):
         tf.expand_dims(tf.constant(g_mean_size_arr, dtype=tf.float32), 0)
 
     return end_points
+
+# --------------------------------------
+# Shared subgraphs for v1 and v2 models
+# --------------------------------------
+
+def placeholder_inputs(batch_size, num_point):
+    ''' Get useful placeholder tensors.
+    Input:
+        batch_size: scalar int
+        num_point: scalar int
+    Output:
+        TF placeholders for inputs and ground truths
+    '''
+    pointclouds_pl = tf.placeholder(tf.float32,
+        shape=(batch_size, num_point, 4))
+    one_hot_vec_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
+
+    labels_pl = tf.placeholder(tf.int32, shape=(batch_size, num_point))
+    centers_pl = tf.placeholder(tf.float32, shape=(batch_size, 3))
+    heading_class_label_pl = tf.placeholder(tf.int32, shape=(batch_size,))
+    heading_residual_label_pl = tf.placeholder(tf.float32, shape=(batch_size,))
+    size_class_label_pl = tf.placeholder(tf.int32, shape=(batch_size,))
+    size_residual_label_pl = tf.placeholder(tf.float32, shape=(batch_size,3))
+
+    return pointclouds_pl, one_hot_vec_pl, labels_pl, centers_pl, \
+        heading_class_label_pl, heading_residual_label_pl, \
+        size_class_label_pl, size_residual_label_pl
+
+
+def point_cloud_masking(point_cloud, logits, end_points, xyz_only=True):
+    ''' Select point cloud with predicted 3D mask,
+    translate coordinates to the masked points centroid.
+    
+    Input:
+        point_cloud: TF tensor in shape (B,N,C)
+        logits: TF tensor in shape (B,N,2)
+        end_points: dict
+        xyz_only: boolean, if True only return XYZ channels
+    Output:
+        object_point_cloud: TF tensor in shape (B,M,3)
+            for simplicity we only keep XYZ here
+            M = NUM_OBJECT_POINT as a hyper-parameter
+        mask_xyz_mean: TF tensor in shape (B,3)
+    '''
+    batch_size = point_cloud.get_shape()[0].value
+    num_point = point_cloud.get_shape()[1].value
+    mask = tf.slice(logits,[0,0,0],[-1,-1,1]) < \
+        tf.slice(logits,[0,0,1],[-1,-1,1])
+    mask = tf.to_float(mask) # BxNx1
+    mask_count = tf.tile(tf.reduce_sum(mask,axis=1,keep_dims=True),
+        [1,1,3]) # Bx1x3
+    point_cloud_xyz = tf.slice(point_cloud, [0,0,0], [-1,-1,3]) # BxNx3
+    mask_xyz_mean = tf.reduce_sum(tf.tile(mask, [1,1,3])*point_cloud_xyz,
+        axis=1, keep_dims=True) # Bx1x3
+    mask = tf.squeeze(mask, axis=[2]) # BxN
+    end_points['mask'] = mask
+    mask_xyz_mean = mask_xyz_mean/tf.maximum(mask_count,1) # Bx1x3
+    point_cloud_xyz_stage1 = point_cloud_xyz - \
+        tf.tile(mask_xyz_mean, [1,num_point,1])
+
+    if xyz_only:
+        point_cloud_stage1 = point_cloud_xyz_stage1
+    else:
+        point_cloud_features = tf.slice(point_cloud, [0,0,3], [-1,-1,-1])
+        point_cloud_stage1 = tf.concat(\
+            [point_cloud_xyz_stage1, point_cloud_features], axis=-1)
+    num_channels = point_cloud_stage1.get_shape()[2].value
+
+    object_point_cloud, _ = tf_gather_object_pc(point_cloud_stage1,
+        mask, NUM_OBJECT_POINT)
+    object_point_cloud.set_shape([batch_size, NUM_OBJECT_POINT, num_channels])
+
+    return object_point_cloud, tf.squeeze(mask_xyz_mean, axis=1), end_points
+
+
+def get_center_regression_net(object_point_cloud, one_hot_vec,
+                              is_training, bn_decay, end_points):
+    ''' Regression network for center delta. a.k.a. T-Net.
+    Input:
+        object_point_cloud: TF tensor in shape (B,M,C)
+            point clouds in 3D mask coordinate
+        one_hot_vec: TF tensor in shape (B,3)
+            length-3 vectors indicating predicted object type
+    Output:
+        predicted_center: TF tensor in shape (B,3)
+    ''' 
+    num_point = object_point_cloud.get_shape()[1].value
+    net = tf.expand_dims(object_point_cloud, 2)
+    net = tf_util.conv2d(net, 128, [1,1],
+                         padding='VALID', stride=[1,1],
+                         bn=True, is_training=is_training,
+                         scope='conv-reg1-stage1', bn_decay=bn_decay)
+    net = tf_util.conv2d(net, 128, [1,1],
+                         padding='VALID', stride=[1,1],
+                         bn=True, is_training=is_training,
+                         scope='conv-reg2-stage1', bn_decay=bn_decay)
+    net = tf_util.conv2d(net, 256, [1,1],
+                         padding='VALID', stride=[1,1],
+                         bn=True, is_training=is_training,
+                         scope='conv-reg3-stage1', bn_decay=bn_decay)
+    net = tf_util.max_pool2d(net, [num_point,1],
+        padding='VALID', scope='maxpool-stage1')
+    net = tf.squeeze(net, axis=[1,2])
+    net = tf.concat([net, one_hot_vec], axis=1)
+    net = tf_util.fully_connected(net, 256, scope='fc1-stage1', bn=True,
+        is_training=is_training, bn_decay=bn_decay)
+    net = tf_util.fully_connected(net, 128, scope='fc2-stage1', bn=True,
+        is_training=is_training, bn_decay=bn_decay)
+    predicted_center = tf_util.fully_connected(net, 3, activation_fn=None,
+        scope='fc3-stage1')
+    return predicted_center, end_points
 
 
 def get_loss(mask_label, center_label, \
