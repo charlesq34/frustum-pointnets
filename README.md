@@ -1,4 +1,5 @@
-### Frustum PointNets for 3D Object Detection from RGB-D Data
+## Frustum PointNets for 3D Object Detection from RGB-D Data
+Created by <a href="http://charlesrqi.com" target="_blank">Charles R. Qi</a>, <a href="http://www.cs.unc.edu/~wliu/" target="_black">Wei Liu</a>, <a href="http://www.cs.cornell.edu/~chenxiawu/" target="_blank">Chenxia Wu</a>, <a href="http://cseweb.ucsd.edu/~haosu/" target="_blank">Hao Su</a> and <a href="http://geometry.stanford.edu/member/guibas/" target="_blank">Leonidas J. Guibas</a>
 
 ![teaser](https://github.com/charlesq34/frustum-pointnets/blob/master/doc/teaser.jpg)
 
@@ -13,6 +14,7 @@ If you find our work useful in your research, please consider citing:
         }
 
 ### Introduction
+This work is based on our CVPR 2018 paper (also available as arXiv report [here](https://arxiv.org/abs/1711.08488). We proposed a novel pipeline for 3D object detection from RGB-D data.
 
 ### Installation
 
