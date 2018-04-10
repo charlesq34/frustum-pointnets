@@ -339,7 +339,7 @@ def from_prediction_to_label_format(center, angle_class, angle_res,\
 
 if __name__=='__main__':
     import mayavi.mlab as mlab 
-    sys.path.append(os.path.join(ROOT_DIR, 'utils'))
+    sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
     from viz_util import draw_lidar, draw_gt_boxes3d
     median_list = []
     dataset = FrustumDataset(2048, split='train',

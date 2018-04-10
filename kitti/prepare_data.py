@@ -13,7 +13,7 @@ import mayavi.mlab as mlab
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
-sys.path.append(os.path.join(ROOT_DIR, 'utils'))
+sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
 import cPickle as pickle
 from kitti_object import *
@@ -475,7 +475,7 @@ if __name__=='__main__':
         extract_frustum_data(\
             os.path.join(BASE_DIR, 'image_sets/train.txt'),
             'training',
-            output_prefix+'train.pickle', 
+            os.path.join(BASE_DIR, output_prefix+'train.pickle'), 
             viz=False, perturb_box2d=True, augmentX=5,
             type_whitelist=type_whitelist)
 
@@ -483,7 +483,7 @@ if __name__=='__main__':
         extract_frustum_data(\
             os.path.join(BASE_DIR, 'image_sets/val.txt'),
             'training',
-            output_prefix+'val.pickle',
+            os.path.join(BASE_DIR, output_prefix+'val.pickle'),
             viz=False, perturb_box2d=False, augmentX=1,
             type_whitelist=type_whitelist)
 
@@ -491,6 +491,6 @@ if __name__=='__main__':
         extract_frustum_data_rgb_detection(\
             os.path.join(BASE_DIR, 'rgb_detections/rgb_detection_val.txt'),
             'training',
-            output_prefix+'val_rgb_detection.pickle',
+            os.path.join(BASE_DIR, output_prefix+'val_rgb_detection.pickle'),
             viz=False,
             type_whitelist=type_whitelist) 
