@@ -17,12 +17,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
+from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
 import provider
 from train_util import get_batch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--num_point', type=int, default=2048, help='Point Number [default: 2048]')
+parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
 parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
 parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
@@ -97,10 +98,10 @@ def inference(sess, ops, pc, one_hot_vec, batch_size):
     num_batches = pc.shape[0]/batch_size
     logits = np.zeros((pc.shape[0], pc.shape[1], NUM_CLASSES))
     centers = np.zeros((pc.shape[0], 3))
-    heading_logits = np.zeros((pc.shape[0],12))
-    heading_residuals = np.zeros((pc.shape[0],12))
-    size_logits = np.zeros((pc.shape[0],8))
-    size_residuals = np.zeros((pc.shape[0],8,3))
+    heading_logits = np.zeros((pc.shape[0], NUM_HEADING_BIN))
+    heading_residuals = np.zeros((pc.shape[0], NUM_HEADING_BIN))
+    size_logits = np.zeros((pc.shape[0], NUM_SIZE_CLUSTER))
+    size_residuals = np.zeros((pc.shape[0], NUM_SIZE_CLUSTER, 3))
     scores = np.zeros((pc.shape[0],)) # 3D box score 
    
     ep = ops['end_points'] 

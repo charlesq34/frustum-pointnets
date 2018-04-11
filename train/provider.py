@@ -66,7 +66,8 @@ def class2angle(pred_cls, residual, num_class, to_label_format=True):
         
 def size2class(size, type_name):
     ''' Convert 3D bounding box size to template class and residuals.
-    
+    todo (rqi): support multiple size clusters per type.
+ 
     Input:
         size: numpy array of shape (3,) for (l,w,h)
         type_name: string

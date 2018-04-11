@@ -159,7 +159,7 @@ def get_model(point_cloud, one_hot_vec, is_training, bn_decay=None):
     end_points['mask_logits'] = logits
 
     # Masking
-    # select masked points and subtract masked points centroid
+    # select masked points and translate to masked points' centroid
     object_point_cloud_xyz, mask_xyz_mean, end_points = \
         point_cloud_masking(point_cloud, logits, end_points)
 
@@ -169,8 +169,9 @@ def get_model(point_cloud, one_hot_vec, is_training, bn_decay=None):
         is_training, bn_decay, end_points)
     stage1_center = center_delta + mask_xyz_mean # Bx3
     end_points['stage1_center'] = stage1_center
+    # Get object point cloud in object coordinate
     object_point_cloud_xyz_new = \
-        object_point_cloud_xyz - tf.expand_dims(stage1_center, 1)
+        object_point_cloud_xyz - tf.expand_dims(center_delta, 1)
 
     # Amodel Box Estimation PointNet
     output, end_points = get_3d_box_estimation_v1_net(\
