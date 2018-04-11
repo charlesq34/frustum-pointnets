@@ -315,7 +315,7 @@ def main_batch(output_filename, result_dir=None):
             score_list.append(batch_scores[i])
 
     print("Segmentation accuracy: %f" % \
-        (correct_cnt / float(batch_size*num_batches*NUM_POINT))
+        (correct_cnt / float(batch_size*num_batches*NUM_POINT)))
 
     with open(output_filename, 'wp') as fp:
         pickle.dump(ps_list, fp)
