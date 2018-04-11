@@ -14,7 +14,7 @@ If you find our work useful in your research, please consider citing:
         }
 
 ### Introduction
-This work is based on our CVPR 2018 paper (also available as arXiv report [here](https://arxiv.org/abs/1711.08488). We proposed a novel pipeline for 3D object detection from RGB-D data.
+This work is based on our CVPR 2018 paper (arXiv report [here](https://arxiv.org/abs/1711.08488).
 
 ### Installation
 
