@@ -40,7 +40,7 @@ Then to prepare the data (as pickle files), simply run:
 
     sh scripts/command_prep_data.sh
 
-Basically, during this process, we are extracting frustum point clouds along with ground truth labels from the original KITTI data, based on both ground truth 2D bounding boxes and boxes from a 2D object detector. You can check `kitti/prepare_data.py` for more details. After the command executes, you should see three newly generated data files under the `kitti` folder. You can run `python kitti/prepare_data.py --demo` to visualize the prepared data.
+Basically, during this process, we are extracting frustum point clouds along with ground truth labels from the original KITTI data, based on both ground truth 2D bounding boxes and boxes from a 2D object detector. We will do the extraction for the train (`kitti/image_sets/train.txt`) and validation set (`kitti/image_sets/val.txt`) using ground truth 2D boxes, and also extract data from validation set with predicted 2D boxes (`kitti/rgb_detections/rgb_detection_val.txt`). You can check `kitti/prepare_data.py` for more details. After the command executes, you should see three newly generated data files under the `kitti` folder. You can run `python kitti/prepare_data.py --demo` to visualize the prepared data.
 
 ### Training Frustum PointNets
 
@@ -51,11 +51,13 @@ To start training (on GPU 0) the Frustum PointNets model, just run the following
 You can run `scripts/command_train_v2.sh` to trian the v2 model as well. The training statiscs and checkpoints will be stored at `train/log_v1` (or `train/log_v2` if it is a v2 model). Run `python train/train.py -h` to see more options of training. 
 
 ### Evaluation
-To evaluate a trained model (assuming you already finished the previous training step), just run:
+To evaluate a trained model (assuming you already finished the previous training step) on the validation set, just run:
 
     CUDA_VISIBLE_DEVICES=0 sh scripts/command_test_v1.sh
 
-Similarly, you can run `scripts/command_test_v2.sh` to evaluate a trained v2 model. The script will automatically evaluate the Frustum PointNets on 
+Similarly, you can run `scripts/command_test_v2.sh` to evaluate a trained v2 model. The script will automatically evaluate the Frustum PointNets on the validation set based on precomputed 2D bounding boxes from a 2D detector (not released here), and then run the KITTI offline evaluation scripts to compute precision recall and calcuate average precisions for 2D detection, bird's eye view detection and 3D detection.
+
+Current there is no script for evaluation on test set, yet it is possible to do it by yourself. To evaluate on the test set, you need to get outputs from a 2D detector on KITTI test set, store it as something in `kitti/rgb_detections`. Then, you need to prepare test set frustum point clouds for the test set, you can achieve that by modifying the code in `kitti/prepare_data.py`. Then you can modify test scripts in `scripts` by changing the data path, idx path and output file name. For our test set results reported, we use the entire `trainval` set for training.
 
 ## License
 Our code is released under the Apache 2.0 license (see LICENSE file for details).
