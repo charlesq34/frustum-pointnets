@@ -48,7 +48,10 @@ TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
     rotate_to_center=True, overwritten_data_path=FLAGS.data_path,
     from_rgb_detection=FLAGS.from_rgb_detection, one_hot=True)
 
-def get_model(batch_size, num_point):
+def get_session_and_ops(batch_size, num_point):
+    ''' Define model graph, load model parameters,
+    create session and return session handle and tensors
+    '''
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, one_hot_vec_pl, labels_pl, centers_pl, \
@@ -87,13 +90,14 @@ def get_model(batch_size, num_point):
         return sess, ops
 
 def softmax(x):
+    ''' Numpy function for softmax'''
     shape = x.shape
     probs = np.exp(x - np.max(x, axis=len(shape)-1, keepdims=True))
     probs /= np.sum(probs, axis=len(shape)-1, keepdims=True)
     return probs
 
 def inference(sess, ops, pc, one_hot_vec, batch_size):
-    ''' pc: BxNx3 array, Bx3 array, return BxN pred and Bx3 centers '''
+    ''' Run inference for frustum pointnets in batch mode '''
     assert pc.shape[0]%batch_size == 0
     num_batches = pc.shape[0]/batch_size
     logits = np.zeros((pc.shape[0], pc.shape[1], NUM_CLASSES))
@@ -151,6 +155,7 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
                             heading_cls_list, heading_res_list, \
                             size_cls_list, size_res_list, \
                             rot_angle_list, score_list):
+    ''' Write frustum pointnets results to KITTI format label files. '''
     if result_dir is None: return
     results = {} # map from idx to list of strings, each string is a line (without \n)
     for i in range(len(center_list)):
@@ -178,14 +183,18 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
         fout.close() 
 
 def fill_files(output_dir, to_fill_filename_list):
+    ''' Create empty files if not exist for the filelist. '''
     for filename in to_fill_filename_list:
         filepath = os.path.join(output_dir, filename)
         if not os.path.exists(filepath):
             fout = open(filepath, 'w')
             fout.close()
 
-def main_batch_from_rgb_detection(output_filename, result_dir=None):
-    # todo: support variable number of points.
+def test_from_rgb_detection(output_filename, result_dir=None):
+    ''' Test frustum pointents with 2D boxes from a RGB detector.
+    Write test results to KITTI format label files.
+    todo (rqi): support variable number of points.
+    '''
     ps_list = []
     segp_list = []
     center_list = []
@@ -204,7 +213,7 @@ def main_batch_from_rgb_detection(output_filename, result_dir=None):
     
     batch_data_to_feed = np.zeros((batch_size, NUM_POINT, NUM_CHANNEL))
     batch_one_hot_to_feed = np.zeros((batch_size, 3))
-    sess, ops = get_model(batch_size=batch_size, num_point=NUM_POINT)
+    sess, ops = get_session_and_ops(batch_size=batch_size, num_point=NUM_POINT)
     for batch_idx in range(num_batches):
         print('batch idx: %d' % (batch_idx))
         start_idx = batch_idx * batch_size
@@ -264,8 +273,11 @@ def main_batch_from_rgb_detection(output_filename, result_dir=None):
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
 
-def main_batch(output_filename, result_dir=None):
-    # todo: support variable number of points.
+def test(output_filename, result_dir=None):
+    ''' Test frustum pointnets with GT 2D boxes.
+    Write test results to KITTI format label files.
+    todo (rqi): support variable number of points.
+    '''
     ps_list = []
     seg_list = []
     segp_list = []
@@ -281,7 +293,7 @@ def main_batch(output_filename, result_dir=None):
     batch_size = BATCH_SIZE
     num_batches = len(TEST_DATASET)/batch_size
 
-    sess, ops = get_model(batch_size=batch_size, num_point=NUM_POINT)
+    sess, ops = get_session_and_ops(batch_size=batch_size, num_point=NUM_POINT)
     correct_cnt = 0
     for batch_idx in range(num_batches):
         print('batch idx: %d' % (batch_idx))
@@ -317,17 +329,18 @@ def main_batch(output_filename, result_dir=None):
     print("Segmentation accuracy: %f" % \
         (correct_cnt / float(batch_size*num_batches*NUM_POINT)))
 
-    with open(output_filename, 'wp') as fp:
-        pickle.dump(ps_list, fp)
-        pickle.dump(seg_list, fp)
-        pickle.dump(segp_list, fp)
-        pickle.dump(center_list, fp)
-        pickle.dump(heading_cls_list, fp)
-        pickle.dump(heading_res_list, fp)
-        pickle.dump(size_cls_list, fp)
-        pickle.dump(size_res_list, fp)
-        pickle.dump(rot_angle_list, fp)
-        pickle.dump(score_list, fp)
+    if FLAGS.dump_result:
+        with open(output_filename, 'wp') as fp:
+            pickle.dump(ps_list, fp)
+            pickle.dump(seg_list, fp)
+            pickle.dump(segp_list, fp)
+            pickle.dump(center_list, fp)
+            pickle.dump(heading_cls_list, fp)
+            pickle.dump(heading_res_list, fp)
+            pickle.dump(size_cls_list, fp)
+            pickle.dump(size_res_list, fp)
+            pickle.dump(rot_angle_list, fp)
+            pickle.dump(score_list, fp)
 
     # Write detection results for KITTI evaluation
     write_detection_results(result_dir, TEST_DATASET.id_list,
@@ -338,6 +351,6 @@ def main_batch(output_filename, result_dir=None):
 
 if __name__=='__main__':
     if FLAGS.from_rgb_detection:
-        main_batch_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
+        test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
-        main_batch(FLAGS.output+'.pickle', FLAGS.output)
+        test(FLAGS.output+'.pickle', FLAGS.output)

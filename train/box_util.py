@@ -69,25 +69,7 @@ def convex_hull_intersection(p1, p2):
         hull_inter = ConvexHull(inter_p)
         return inter_p, hull_inter.volume
     else:
-        return None, 0.0
-
-import matplotlib
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-import matplotlib.pyplot as plt
-def plot_polys(plist,scale=500.0):
-    fig, ax = plt.subplots()
-    patches = []
-    for p in plist:
-        poly = Polygon(np.array(p)/scale, True)
-        patches.append(poly)
-
-    pc = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.5)
-    colors = 100*np.random.rand(len(patches))
-    pc.set_array(np.array(colors))
-    ax.add_collection(pc)
-    plt.show()
-   
+        return None, 0.0  
 
 def box3d_vol(corners):
     ''' corners: (8,3) no assumption on axis direction '''
@@ -193,6 +175,25 @@ def box2d_iou(box1, box2):
 
 
 if __name__=='__main__':
+
+    # Function for polygon ploting
+    import matplotlib
+    from matplotlib.patches import Polygon
+    from matplotlib.collections import PatchCollection
+    import matplotlib.pyplot as plt
+    def plot_polys(plist,scale=500.0):
+        fig, ax = plt.subplots()
+        patches = []
+        for p in plist:
+            poly = Polygon(np.array(p)/scale, True)
+            patches.append(poly)
+
+    pc = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.5)
+    colors = 100*np.random.rand(len(patches))
+    pc.set_array(np.array(colors))
+    ax.add_collection(pc)
+    plt.show()
+ 
     # Demo on ConvexHull
     points = np.random.rand(30, 2)   # 30 random points in 2-D
     hull = ConvexHull(points)
