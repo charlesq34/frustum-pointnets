@@ -1,7 +1,14 @@
-# Frustum PointNets for 3D Object Detection from RGB-D Data
+## Frustum PointNets for 3D Object Detection from RGB-D Data
 Created by <a href="http://charlesrqi.com" target="_blank">Charles R. Qi</a>, <a href="http://www.cs.unc.edu/~wliu/" target="_black">Wei Liu</a>, <a href="http://www.cs.cornell.edu/~chenxiawu/" target="_blank">Chenxia Wu</a>, <a href="http://cseweb.ucsd.edu/~haosu/" target="_blank">Hao Su</a> and <a href="http://geometry.stanford.edu/member/guibas/" target="_blank">Leonidas J. Guibas</a>
 
 ![teaser](https://github.com/charlesq34/frustum-pointnets/blob/master/doc/teaser.jpg)
+
+## Introduction
+This repository is code release for our CVPR 2018 paper (arXiv report [here](https://arxiv.org/abs/1711.08488)). In this work, we study 3D object detection from RGB-D data. We propose a novel detection pipeline that combines both mature 2D object detectors and the state-of-the-art 3D deep learning techniques. In our pipeline, we firstly build object proposals with a 2D detector running on RGB images, where each 2D bounding box defines a 3D frustum region. Then based on 3D point clouds in those frustum regions, we achieve 3D instance segmentation and amodal 3D bounding box estimation, using PointNet/PointNet++ networks (see references at bottom).
+
+By leveraging 2D object detectors, we greatly reduce 3D search space for object localization. The high resolution and rich texture information in images also enable high recalls for smaller objects like pedestrians or cyclists that are harder to localize by point clouds only. By adopting PointNet architectures, we are able to directly work on 3D point clouds, without the necessity to voxelize them to grids or to project them to image planes. Since we directly work on point clouds, we are able to fully respect and exploit the 3D geometry -- one example is the series of coordinate normalizations we apply, which help canocalizes the learning problem. Evaluated on KITTI and SUNRGBD benchmarks, our system significantly outperforms previous state of the art and is still in leading positions on current <a href="http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d">KITTI leaderboard</a>.
+
+For more details of our architecture, please refer to our paper or project website (TBA).
 
 ## Citation
 If you find our work useful in your research, please consider citing:
@@ -12,13 +19,6 @@ If you find our work useful in your research, please consider citing:
           journal={arXiv preprint arXiv:1711.08488},
           year={2017}
         }
-
-## Introduction
-This repository is the open source code release for our CVPR 2018 paper (arXiv report [here](https://arxiv.org/abs/1711.08488)). In this work, we study 3D object detection from RGB-D data. We proposed a novel detection pipeline that combines both mature 2D object detectors and the state-of-the-art 3D deep learning techniques. In our pipeline, we firstly build object proposals with a 2D detector running on RGB images, where each 2D bounding box defines a 3D frustum region. Then based on 3D point clouds in those frustum regions, we achieve 3D instance segmentation and amodal 3D bounding box estimation, using PointNet/PointNet++ networks.
-
-By leveraging 2D object detectors, we greatly reduce 3D search space for object localization. The high resolution and rich texture information in images also enable high recalls for smaller objects like pedestrians or cyclists that are harder to localize by point clouds only. By adopting PointNet network architectures, we are able to directly work on 3D point clouds, without the necessity to voxelize them to grids or to project them to image planes. Since we directly work on point clouds, we are able to fully respect and exploit the 3D geometry -- one example is the series of coordinate normalizations we apply to canocalize the learning problem. Evaluated on KITTI and SUN-RGBD benchmarks, our system significantly outperforms previous state of the art and is still in leading positions on current <a href="http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d">KITTI leaderboard</a>.
-
-For more details of our architecture, please refer to our paper or project website (TBA).
 
 ## Installation
 Install <a href="https://www.tensorflow.org/install/">TensorFlow</a>. The code is tested under TF1.2 and TF1.4 (GPU version) and Python 2.7 (version 3 should also work) on Ubuntu 14.04 and Ubuntu 16.04. There are also some dependencies for a few Python libraries for data processing and visualizations like `cv2`, `mayavi`  etc. It's highly recommended that you have access to GPUs.
@@ -57,7 +57,7 @@ To evaluate a trained model (assuming you already finished the previous training
 
 Similarly, you can run `scripts/command_test_v2.sh` to evaluate a trained v2 model. The script will automatically evaluate the Frustum PointNets on the validation set based on precomputed 2D bounding boxes from a 2D detector (not released here), and then run the KITTI offline evaluation scripts to compute precision recall and calcuate average precisions for 2D detection, bird's eye view detection and 3D detection.
 
-Current there is no script for evaluation on test set, yet it is possible to do it by yourself. To evaluate on the test set, you need to get outputs from a 2D detector on KITTI test set, store it as something in `kitti/rgb_detections`. Then, you need to prepare test set frustum point clouds for the test set, you can achieve that by modifying the code in `kitti/prepare_data.py`. Then you can modify test scripts in `scripts` by changing the data path, idx path and output file name. For our test set results reported, we use the entire `trainval` set for training.
+Currently there is no script for evaluation on test set, yet it is possible to do it by yourself. To evaluate on the test set, you need to get outputs from a 2D detector on KITTI test set, store it as something in `kitti/rgb_detections`. Then, you need to prepare test set frustum point clouds for the test set, by modifying the code in `kitti/prepare_data.py`. Then you can modify test scripts in `scripts` by changing the data path, idx path and output file name. For our test set results reported, we used the entire `trainval` set for training.
 
 ## License
 Our code is released under the Apache 2.0 license (see LICENSE file for details).
