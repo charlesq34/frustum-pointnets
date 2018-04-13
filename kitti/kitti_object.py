@@ -14,12 +14,6 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
 
-try:
-    import mayavi.mlab as mlab
-    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
-except:
-    print('Skip mayavi import.')
-    pass
 
 class kitti_object(object):
     '''Load and parse object data into a usable format.'''
@@ -152,6 +146,9 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
+    if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+
     print('All point num: ', pc_velo.shape[0])
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
@@ -218,4 +215,6 @@ def dataset_viz():
         raw_input()
 
 if __name__=='__main__':
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
     dataset_viz()
