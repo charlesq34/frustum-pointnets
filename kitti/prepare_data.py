@@ -9,7 +9,6 @@ import sys
 import numpy as np
 import cv2
 from PIL import Image
-import mayavi.mlab as mlab
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
@@ -461,6 +460,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     if args.demo:
+        import mayavi.mlab as mlab
         demo()
         exit()
 

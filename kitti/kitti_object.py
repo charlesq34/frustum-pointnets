@@ -9,12 +9,10 @@ import sys
 import numpy as np
 import cv2
 from PIL import Image
-import mayavi.mlab as mlab
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
-from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
 
 class kitti_object(object):
     '''Load and parse object data into a usable format.'''
@@ -213,4 +211,6 @@ def dataset_viz():
         raw_input()
 
 if __name__=='__main__':
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
     dataset_viz()
