@@ -350,7 +350,7 @@ if __name__=='__main__':
     sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
     from viz_util import draw_lidar, draw_gt_boxes3d
     median_list = []
-    dataset = FrustumDataset(2048, split='train',
+    dataset = FrustumDataset(1024, split='val',
         rotate_to_center=True, random_flip=True, random_shift=True)
     for i in range(len(dataset)):
         data = dataset[i]

@@ -18,12 +18,6 @@ import cPickle as pickle
 from kitti_object import *
 import argparse
 
-try:
-    import mayavi.mlab as mlab
-    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
-except:
-    print('Skip mayavi import.')
-    pass
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
@@ -47,6 +41,8 @@ def extract_pc_in_box2d(pc, box2d):
     return pc[box2d_roi_inds,:], box2d_roi_inds
      
 def demo():
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
     data_idx = 0
 
