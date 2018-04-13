@@ -18,6 +18,13 @@ import cPickle as pickle
 from kitti_object import *
 import argparse
 
+try:
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
+except:
+    print('Skip mayavi import.')
+    pass
+
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
     if not isinstance(hull,Delaunay):
@@ -40,7 +47,6 @@ def extract_pc_in_box2d(pc, box2d):
     return pc[box2d_roi_inds,:], box2d_roi_inds
      
 def demo():
-    from viz_util import draw_lidar, draw_gt_boxes3d
     dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
     data_idx = 0
 
@@ -54,11 +60,11 @@ def demo():
     pc_velo = dataset.get_lidar(data_idx)[:,0:3]
     calib = dataset.get_calibration(data_idx)
 
-    # Draw lidar in rect camera coord
-    print(' -------- LiDAR points in rect camera coordination --------')
-    pc_rect = calib.project_velo_to_rect(pc_velo)
-    fig = draw_lidar_simple(pc_rect)
-    raw_input()
+    ## Draw lidar in rect camera coord
+    #print(' -------- LiDAR points in rect camera coordination --------')
+    #pc_rect = calib.project_velo_to_rect(pc_velo)
+    #fig = draw_lidar_simple(pc_rect)
+    #raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D/3D bounding boxes in images --------')
@@ -466,7 +472,6 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     if args.demo:
-        import mayavi.mlab as mlab
         demo()
         exit()
 
