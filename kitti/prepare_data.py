@@ -266,6 +266,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         pickle.dump(frustum_angle_list, fp)
     
     if viz:
+        import mayavi.mlab as mlab
         for i in range(10):
             p1 = input_list[i]
             seg = label_list[i] 
@@ -410,6 +411,7 @@ def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
         pickle.dump(prob_list, fp)
     
     if viz:
+        import mayavi.mlab as mlab
         for i in range(10):
             p1 = input_list[i]
             fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
