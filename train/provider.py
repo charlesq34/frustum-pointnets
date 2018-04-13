@@ -357,7 +357,7 @@ if __name__=='__main__':
         print('Center: ', data[2], \
             'angle_class: ', data[3], 'angle_res:', data[4], \
             'size_class: ', data[5], 'size_residual:', data[6], \
-            'real_size:', g_type_mean_size[class2type[data[5]]]+data[6])
+            'real_size:', g_type_mean_size[g_class2type[data[5]]]+data[6])
         print('Frustum angle: ', dataset.frustum_angle_list[i])
         median_list.append(np.median(data[0][:,0]))
         print(data[2], dataset.box3d_list[i], median_list[-1])
