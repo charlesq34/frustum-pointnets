@@ -3,6 +3,7 @@
 Author: Charles R. Qi
 Date: September 2017
 '''
+from __future__ import print_function
 
 import os
 import sys
@@ -52,7 +53,7 @@ def demo():
     img = dataset.get_image(data_idx)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
     img_height, img_width, img_channel = img.shape
-    print('Image shape: ', img.shape)
+    print(('Image shape: ', img.shape))
     pc_velo = dataset.get_lidar(data_idx)[:,0:3]
     calib = dataset.get_calibration(data_idx)
 
@@ -84,7 +85,7 @@ def demo():
     box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[0], calib.P) 
     box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
     box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo)
-    print('Number of points in 3d box: ', box3droi_pc_velo.shape[0])
+    print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
@@ -120,7 +121,7 @@ def demo():
         objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
     boxfov_pc_velo = \
         get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax)
-    print('2d box FOV point num: ', boxfov_pc_velo.shape[0])
+    print(('2d box FOV point num: ', boxfov_pc_velo.shape[0]))
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
@@ -179,7 +180,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     pos_cnt = 0
     all_cnt = 0
     for data_idx in data_idx_list:
-        print '------------- ', data_idx
+        print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
         objects = dataset.get_label_objects(data_idx)
         pc_velo = dataset.get_lidar(data_idx)
@@ -200,8 +201,8 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 # Augment data by box2d perturbation
                 if perturb_box2d:
                     xmin,ymin,xmax,ymax = random_shift_box2d(box2d)
-                    print box2d
-                    print xmin,ymin,xmax,ymax
+                    print(box2d)
+                    print(xmin,ymin,xmax,ymax)
                 else:
                     xmin,ymin,xmax,ymax = box2d
                 box_fov_inds = (pc_image_coord[:,0]<xmax) & \
@@ -284,7 +285,7 @@ def get_box3d_dim_statistics(idx_filename):
     ry_list = []
     data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
     for data_idx in data_idx_list:
-        print '------------- ', data_idx
+        print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
         objects = dataset.get_label_objects(data_idx)
         for obj_idx in range(len(objects)):

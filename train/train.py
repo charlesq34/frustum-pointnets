@@ -3,6 +3,7 @@
 Author: Charles R. Qi
 Date: September 2017
 '''
+from __future__ import print_function
 
 import os
 import sys

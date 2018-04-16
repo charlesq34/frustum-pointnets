@@ -3,6 +3,7 @@
 Collected by Charles R. Qi
 Date: September 2017
 """
+from __future__ import print_function
 
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -198,7 +199,7 @@ if __name__=='__main__':
     points = np.random.rand(30, 2)   # 30 random points in 2-D
     hull = ConvexHull(points)
     # **In 2D "volume" is is area, "area" is perimeter
-    print('Hull area: ', hull.volume)
+    print(('Hull area: ', hull.volume))
     for simplex in hull.simplices:
         print(simplex)
 
@@ -213,7 +214,7 @@ if __name__=='__main__':
     rect2 = [(150,150),(300,300),(150,450),(0,300)] 
     plot_polys([rect1, rect2])
     inter, area = convex_hull_intersection(rect1, rect2)
-    print(inter, area)
+    print((inter, area))
     if inter is not None:
         print(poly_area(np.array(inter)[:,0], np.array(inter)[:,1]))
     
@@ -230,4 +231,4 @@ if __name__=='__main__':
     rect2 = [rect2[0], rect2[3], rect2[2], rect2[1]]
     plot_polys([rect1, rect2])
     inter, area = convex_hull_intersection(rect1, rect2)
-    print(inter, area)
+    print((inter, area))
