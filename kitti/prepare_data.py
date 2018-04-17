@@ -335,7 +335,7 @@ def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
     Output:
         None (will write a .pickle file to the disk)
     '''
-    dataset = kitti_object('/home/rqi/Data/KITTI/object', split)
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'), split)
     det_id_list, det_type_list, det_box2d_list, det_prob_list = \
         read_det_file(det_filename)
     cache_id = -1
