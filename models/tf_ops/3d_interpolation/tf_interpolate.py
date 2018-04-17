@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 from tensorflow.python.framework import ops
 import sys
@@ -51,8 +52,8 @@ if __name__=='__main__':
         now = time.time() 
         for _ in range(100):
             ret = sess.run(interpolated_points)
-        print time.time() - now
-        print ret.shape, ret.dtype
+        print(time.time() - now)
+        print(ret.shape, ret.dtype)
         #print ret
     
     

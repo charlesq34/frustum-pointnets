@@ -9,6 +9,12 @@ Ref: https://github.com/hengck23/didi-udacity-2017/blob/master/baseline-04/kitti
 import numpy as np
 import mayavi.mlab as mlab
 
+try:
+    raw_input          # Python 2
+except NameError:
+    raw_input = input  # Python 3
+
+
 def draw_lidar_simple(pc, color=None):
     ''' Draw lidar points. simplest set up. '''
     fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1600, 1000))

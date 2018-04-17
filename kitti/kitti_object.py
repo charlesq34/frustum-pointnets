@@ -3,6 +3,7 @@
 Author: Charles R. Qi
 Date: September 2017
 '''
+from __future__ import print_function
 
 import os
 import sys
@@ -13,6 +14,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
+
+try:
+    raw_input          # Python 2
+except NameError:
+    raw_input = input  # Python 3
 
 
 class kitti_object(object):
@@ -149,13 +155,13 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
 
-    print('All point num: ', pc_velo.shape[0])
+    print(('All point num: ', pc_velo.shape[0]))
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
         pc_velo = get_lidar_in_image_fov(pc_velo, calib, 0, 0,
             img_width, img_height)
-        print('FOV point num: ', pc_velo.shape[0])
+        print(('FOV point num: ', pc_velo.shape[0]))
     draw_lidar(pc_velo, fig=fig)
 
     for obj in objects:
@@ -203,7 +209,7 @@ def dataset_viz():
         img = dataset.get_image(data_idx)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
         img_height, img_width, img_channel = img.shape
-        print('Image shape: ', img.shape)
+        print(('Image shape: ', img.shape))
         pc_velo = dataset.get_lidar(data_idx)[:,0:3]
         calib = dataset.get_calibration(data_idx)
 
