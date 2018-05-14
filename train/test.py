@@ -5,6 +5,7 @@ and [optionally] write results to pickle files.
 Author: Charles R. Qi
 Date: September 2017
 '''
+from __future__ import print_function
 
 import os
 import sys
@@ -207,7 +208,7 @@ def test_from_rgb_detection(output_filename, result_dir=None):
     onehot_list = []
 
     test_idxs = np.arange(0, len(TEST_DATASET))
-    print len(TEST_DATASET)
+    print(len(TEST_DATASET))
     batch_size = BATCH_SIZE
     num_batches = int((len(TEST_DATASET)+batch_size-1)/batch_size)
     

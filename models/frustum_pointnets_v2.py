@@ -1,5 +1,6 @@
 ''' Frustum PointNets v2 Model.
 '''
+from __future__ import print_function
 
 import sys
 import os
@@ -173,7 +174,7 @@ if __name__=='__main__':
         inputs = tf.zeros((32,1024,4))
         outputs = get_model(inputs, tf.ones((32,3)), tf.constant(True))
         for key in outputs:
-            print(key, outputs[key])
+            print((key, outputs[key]))
         loss = get_loss(tf.zeros((32,1024),dtype=tf.int32),
             tf.zeros((32,3)), tf.zeros((32,),dtype=tf.int32),
             tf.zeros((32,)), tf.zeros((32,),dtype=tf.int32),

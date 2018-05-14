@@ -3,6 +3,7 @@
 Author: Charles R. Qi
 Date: September 2017
 '''
+from __future__ import print_function
 
 import cPickle as pickle
 import sys
@@ -16,6 +17,12 @@ from box_util import box3d_iou
 from model_util import g_type2class, g_class2type, g_type2onehotclass
 from model_util import g_type_mean_size
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
+
+try:
+    raw_input          # Python 2
+except NameError:
+    raw_input = input  # Python 3
+
 
 def rotate_pc_along_y(pc, rot_angle):
     '''
@@ -354,13 +361,13 @@ if __name__=='__main__':
         rotate_to_center=True, random_flip=True, random_shift=True)
     for i in range(len(dataset)):
         data = dataset[i]
-        print('Center: ', data[2], \
+        print(('Center: ', data[2], \
             'angle_class: ', data[3], 'angle_res:', data[4], \
             'size_class: ', data[5], 'size_residual:', data[6], \
-            'real_size:', g_type_mean_size[g_class2type[data[5]]]+data[6])
-        print('Frustum angle: ', dataset.frustum_angle_list[i])
+            'real_size:', g_type_mean_size[g_class2type[data[5]]]+data[6]))
+        print(('Frustum angle: ', dataset.frustum_angle_list[i]))
         median_list.append(np.median(data[0][:,0]))
-        print(data[2], dataset.box3d_list[i], median_list[-1])
+        print((data[2], dataset.box3d_list[i], median_list[-1]))
         box3d_from_label = get_3d_box(class2size(data[5],data[6]), class2angle(data[3], data[4],12), data[2])
 
         ps = data[0]
