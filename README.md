@@ -36,7 +36,7 @@ The code is tested under TF1.2 and TF1.4 (GPU version) and Python 2.7 (version 3
 Currently, we support training and testing of the Frustum PointNets models as well as evaluating 3D object detection results based on precomputed 2D detector outputs (under `kitti/rgb_detections`). You are welcomed to extend the code base to support your own 2D detectors or feed your own data for network training.
 
 ### Prepare Training Data
-In this step we convert original KITTI data to organized formats for training our Frustum PointNets.
+In this step we convert original KITTI data to organized formats for training our Frustum PointNets. <b>NEW:</b> You can also directly download the prepared data files <a href="https://1drv.ms/u/s!ApbTjxa06z9CgReyql8fsNz6SnXa" target="_blank">HERE</a> -- to support training and evaluation, just unzip the file and move the `*.pickle` files to the `kitti` folder.
 
 Firstly, you need to download the <a href="http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d" target="_blank">KITTI 3D object detection dataset</a>, including left color images, Velodyne point clouds, camera calibration matrices, and training labels. Make sure the KITTI data is organized as required in `dataset/README.md`. You can run `python kitti/kitti_object.py` to see whether data is downloaded and stored properly. If everything is fine, you should see image and 3D point cloud visualizations of the data. 
 
@@ -57,6 +57,8 @@ To start training (on GPU 0) the Frustum PointNets model, just run the following
     CUDA_VISIBLE_DEVICES=0 sh scripts/command_train_v1.sh
 
 You can run `scripts/command_train_v2.sh` to trian the v2 model as well. The training statiscs and checkpoints will be stored at `train/log_v1` (or `train/log_v2` if it is a v2 model). Run `python train/train.py -h` to see more options of training. 
+
+<b>NEW:</b> We have also prepared some pretrained snapshots for both the v1 and v2 models. You can find them <a href="https://1drv.ms/u/s!ApbTjxa06z9CgRh9Klo4K1xZgHF9" target="_blank">HERE</a> -- to support evaluation script, you just need to unzip the file and move the `log_*` folders to the `train` folder.
 
 ### Evaluation
 To evaluate a trained model (assuming you already finished the previous training step) on the validation set, just run:
