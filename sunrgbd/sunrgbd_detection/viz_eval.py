@@ -9,13 +9,14 @@ import argparse
 from PIL import Image
 import cv2
 import sys
-sys.path.append('../')
-import roi_seg_box3d_dataset
 import os
-sys.path.append('../sunrgbd_data')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+import roi_seg_box3d_dataset
+sys.path.append(os.path.join(BASE_DIR, '../sunrgbd_data'))
 from sunrgbd_data import sunrgbd_object
-from eval_utils import box3d_iou
 from utils import load_zipped_pickle
+sys.path.append(os.path.join(BASE_DIR, '../../train'))
+from box_util import box3d_iou
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_path', default=None, help='data path for .pickle file, the one used for val in train.py [default: None]')

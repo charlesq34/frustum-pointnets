@@ -9,13 +9,14 @@ import argparse
 from PIL import Image
 import cv2
 import sys
-sys.path.append('../')
-import roi_seg_box3d_dataset
 import os
-sys.path.append('../sunrgbd_data')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(BASE_DIR, '../sunrgbd_data'))
 from sunrgbd_data import sunrgbd_object
 from utils import rotz, compute_box_3d, load_zipped_pickle
-from eval_utils import box3d_iou
+sys.path.append(os.path.join(BASE_DIR, '../../train'))
+from box_util import box3d_iou
+import roi_seg_box3d_dataset
 from roi_seg_box3d_dataset import rotate_pc_along_y, NUM_HEADING_BIN
 
 parser = argparse.ArgumentParser()

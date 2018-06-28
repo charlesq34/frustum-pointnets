@@ -53,7 +53,11 @@ def voc_ap(rec, prec, use_07_metric=False):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
-from eval_utils import box3d_iou
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(BASE_DIR, '../../train'))
+from box_util import box3d_iou
 def get_iou(bb1, bb2):
     """ Compute IoU of two bounding boxes.
         ** Define your bod IoU function HERE **

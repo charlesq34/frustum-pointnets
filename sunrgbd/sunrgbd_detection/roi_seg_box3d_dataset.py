@@ -7,9 +7,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 import numpy as np
 sys.path.append(os.path.join(BASE_DIR, '../sunrgbd_data'))
 from utils import roty, load_zipped_pickle
-sys.path.append('../')
-from eval_utils import box3d_iou
-from view_pc import draw_lidar, draw_gt_boxes3d
+sys.path.append(os.path.join(BASE_DIR, '../../train'))
+from box_util import box3d_iou
+sys.path.append(os.path.join(BASE_DIR, '../../mayavi'))
+from viz_util import draw_lidar, draw_gt_boxes3d
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 class2type = {type2class[t]:t for t in type2class}
