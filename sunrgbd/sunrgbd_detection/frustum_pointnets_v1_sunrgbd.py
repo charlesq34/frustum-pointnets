@@ -10,10 +10,10 @@ import sys
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
-sys.path.append(os.path.join(BASE_DIR, '../utils'))
+sys.path.append(os.path.join(BASE_DIR, '../../models'))
 import tf_util
 from roi_seg_box3d_dataset import NUM_HEADING_BIN, NUM_SIZE_CLUSTER, NUM_CLASS, compute_box3d_iou, class2type, type_mean_size
-from model_v1_deeper_0914_corners_balanced import get_box3d_corners, get_box3d_corners_helper # TODO move elsewhere
+from model_util_sunrgbd import get_box3d_corners, get_box3d_corners_helper
 mean_size_arr = np.zeros((NUM_SIZE_CLUSTER, 3))
 for i in range(NUM_SIZE_CLUSTER):
     mean_size_arr[i,:] = type_mean_size[class2type[i]]
@@ -34,7 +34,6 @@ def placeholder_inputs(batch_size, num_point):
 
 
 def get_model(point_cloud, one_hot_vec, is_training, bn_decay=None):
-    """ Classification PointNet, input is BxNx4, onehotvec is Bx3, output BxNx2 """
     batch_size = point_cloud.get_shape()[0].value
     num_point = point_cloud.get_shape()[1].value
     end_points = {}
@@ -280,7 +279,7 @@ def get_loss(logits, \
 
 if __name__=='__main__':
     with tf.Graph().as_default():
-        inputs = tf.zeros((32,1024,4))
+        inputs = tf.zeros((32,1024,6))
         outputs = get_model(inputs, tf.ones((32,3)), tf.constant(True))
         print outputs
         loss = get_loss(outputs[0], tf.zeros((32,1024),dtype=tf.int32), tf.zeros((32,3)), tf.zeros((32,),dtype=tf.int32), tf.zeros((32,)), tf.zeros((32,),dtype=tf.int32), tf.zeros((32,3)), outputs[1])
