@@ -15,6 +15,7 @@ sys.path.append(os.path.join(BASE_DIR, '../sunrgbd_data'))
 from sunrgbd_data import sunrgbd_object
 from utils import rotz, compute_box_3d, load_zipped_pickle
 sys.path.append(os.path.join(BASE_DIR, '../../train'))
+sys.path.append(os.path.join(BASE_DIR, '../../mayavi'))
 from box_util import box3d_iou
 import roi_seg_box3d_dataset
 from roi_seg_box3d_dataset import rotate_pc_along_y, NUM_HEADING_BIN
@@ -33,7 +34,7 @@ dataset = sunrgbd_object('/home/rqi/Data/mysunrgbd', 'training')
 VISU = FLAGS.viz
 if VISU:
     import mayavi.mlab as mlab
-    from view_pc import draw_lidar, draw_gt_boxes3d
+    from viz_util import draw_lidar, draw_gt_boxes3d
 
 #with open(FLAGS.result_path, 'rb') as fp:
 #    ps_list = pickle.load(fp)
